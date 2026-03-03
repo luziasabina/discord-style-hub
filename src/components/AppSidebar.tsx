@@ -3,11 +3,12 @@ import {
   Users,
   Settings,
   Shield,
-  MessageSquare,
   BarChart3,
   Bot,
   Bell,
   Hash,
+  Crown,
+  Heart,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -26,25 +27,18 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Servidores", url: "/servers", icon: Hash },
-  { title: "Membros", url: "/members", icon: Users },
-  { title: "Mensagens", url: "/messages", icon: MessageSquare },
-  { title: "Estatísticas", url: "/stats", icon: BarChart3 },
 ];
 
-const managementItems = [
-  { title: "Bots", url: "/bots", icon: Bot },
-  { title: "Moderação", url: "/moderation", icon: Shield },
-  { title: "Notificações", url: "/notifications", icon: Bell },
-  { title: "Configurações", url: "/settings", icon: Settings },
+const adminItems = [
+  { title: "Painel Admin", url: "/admin", icon: Shield },
+  { title: "Métricas", url: "/admin/metrics", icon: BarChart3 },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
-  const currentPath = location.pathname;
 
   return (
     <Sidebar collapsible="icon">
@@ -56,7 +50,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div>
               <h2 className="text-sm font-bold text-foreground">Discord Panel</h2>
-              <p className="text-xs text-muted-foreground">Painel de Controle</p>
+              <p className="text-xs text-muted-foreground">Ko-fi Integration</p>
             </div>
           )}
         </div>
@@ -74,7 +68,6 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      end={item.url === "/"}
                       className="rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                       activeClassName="bg-primary/15 text-primary font-semibold"
                     >
@@ -90,11 +83,11 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/60">
-            Gerenciamento
+            Administração
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {managementItems.map((item) => (
+              {adminItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
