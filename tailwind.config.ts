@@ -12,6 +12,9 @@ export default {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+    },
     extend: {
       colors: {
         border: "hsl(var(--border))",
@@ -30,6 +33,14 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -57,6 +68,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        surface: {
+          0: "hsl(var(--surface-0))",
+          1: "hsl(var(--surface-1))",
+          2: "hsl(var(--surface-2))",
+          3: "hsl(var(--surface-3))",
+        },
+        online: "hsl(var(--online))",
+        idle: "hsl(var(--idle))",
+        dnd: "hsl(var(--dnd))",
+        offline: "hsl(var(--offline))",
       },
       borderRadius: {
         lg: "var(--radius)",
