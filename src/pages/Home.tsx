@@ -1,6 +1,7 @@
-import { Bot, ArrowRight, Zap, Shield, BarChart3, Heart } from "lucide-react";
+import { Bot, ArrowRight, Zap, Shield, BarChart3, Heart, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const features = [
   {
@@ -26,6 +27,8 @@ const features = [
 ];
 
 const Home = () => {
+  const { user, loading } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
@@ -41,12 +44,23 @@ const Home = () => {
             <Link to="/status">
               <Button variant="ghost" size="sm">Status</Button>
             </Link>
-            <Link to="/login">
-              <Button size="sm">
-                Login com Discord
-                <ArrowRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </Link>
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : user ? (
+              <Link to="/dashboard">
+                <Button size="sm">
+                  Painel
+                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button size="sm">
+                  Login com Discord
+                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </nav>
@@ -64,16 +78,26 @@ const Home = () => {
             <span className="text-primary">Discord com Ko-fi</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
-            Automatize a atribuição de cargos para seus apoiadores do Ko-fi. 
-            Painel completo para gerenciar servidores, membros e métricas.
+            {user
+              ? `Bem-vindo de volta, ${user.username}! Acesse seu painel para gerenciar seus servidores.`
+              : "Automatize a atribuição de cargos para seus apoiadores do Ko-fi. Painel completo para gerenciar servidores, membros e métricas."}
           </p>
           <div className="flex items-center justify-center gap-3">
-            <Link to="/login">
-              <Button size="lg" className="discord-glow">
-                <Bot className="h-4 w-4 mr-2" />
-                Entrar com Discord
-              </Button>
-            </Link>
+            {user ? (
+              <Link to="/dashboard">
+                <Button size="lg" className="discord-glow">
+                  <Bot className="h-4 w-4 mr-2" />
+                  Ir ao Painel
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button size="lg" className="discord-glow">
+                  <Bot className="h-4 w-4 mr-2" />
+                  Entrar com Discord
+                </Button>
+              </Link>
+            )}
             <Link to="/status">
               <Button variant="outline" size="lg">
                 Ver Status

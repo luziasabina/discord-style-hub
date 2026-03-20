@@ -1,12 +1,27 @@
 import { Bot, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
+
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 const Login = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (user) return <Navigate to="/dashboard" replace />;
+
   const handleDiscordLogin = () => {
-    // In production, this would redirect to /auth endpoint for Discord OAuth
-    console.log("Redirect to Discord OAuth");
+    window.location.href = `${API_BASE}/login`;
   };
 
   return (

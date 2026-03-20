@@ -1,42 +1,35 @@
-import { CheckCircle2, XCircle, Loader2, ArrowLeft, Bot, Heart, Globe } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, ArrowLeft, Bot } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-const integrations = [
-  {
-    name: "Discord Bot",
-    description: "Conexão com a API do Discord",
-    status: "online" as const,
-    latency: "42ms",
-  },
-  {
-    name: "Ko-fi Webhooks",
-    description: "Recebimento de eventos do Ko-fi",
-    status: "online" as const,
-    latency: "128ms",
-  },
-  {
-    name: "OAuth Discord",
-    description: "Autenticação de usuários",
-    status: "online" as const,
-    latency: "89ms",
-  },
-  {
-    name: "Banco de Dados",
-    description: "Armazenamento de dados",
-    status: "online" as const,
-    latency: "12ms",
-  },
-];
-
-const statusConfig = {
-  online: { icon: CheckCircle2, label: "Online", className: "text-success" },
-  offline: { icon: XCircle, label: "Offline", className: "text-destructive" },
-  loading: { icon: Loader2, label: "Verificando...", className: "text-warning animate-spin" },
-};
+import { useEffect, useState } from "react";
+import { api, StatusResponse } from "@/lib/api";
 
 const Status = () => {
+  const [status, setStatus] = useState<"loading" | "online" | "offline">("loading");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    api.get<StatusResponse>("/status")
+      .then((data) => {
+        setMessage(data.message);
+        setStatus("online");
+      })
+      .catch(() => {
+        setMessage("Não foi possível conectar à API");
+        setStatus("offline");
+      });
+  }, []);
+
+  const statusConfig = {
+    online: { icon: CheckCircle2, label: "Operacional", className: "text-success" },
+    offline: { icon: XCircle, label: "Fora do ar", className: "text-destructive" },
+    loading: { icon: Loader2, label: "Verificando...", className: "text-warning animate-spin" },
+  };
+
+  const config = statusConfig[status];
+  const StatusIcon = config.icon;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
@@ -70,40 +63,33 @@ const Status = () => {
         {/* Overall Status */}
         <Card className="border-border bg-card mb-6">
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-success/10 flex items-center justify-center">
-              <CheckCircle2 className="h-6 w-6 text-success" />
+            <div className={`h-12 w-12 rounded-2xl ${status === "online" ? "bg-success/10" : status === "offline" ? "bg-destructive/10" : "bg-warning/10"} flex items-center justify-center`}>
+              <StatusIcon className={`h-6 w-6 ${config.className}`} />
             </div>
             <div>
-              <p className="text-lg font-bold text-foreground">Todos os sistemas operacionais</p>
-              <p className="text-sm text-muted-foreground">Última verificação: agora</p>
+              <p className="text-lg font-bold text-foreground">
+                {status === "online" ? "Todos os sistemas operacionais" : status === "offline" ? "Sistema fora do ar" : "Verificando sistemas..."}
+              </p>
+              <p className="text-sm text-muted-foreground">{message}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Individual Services */}
-        <div className="space-y-3">
-          {integrations.map((service) => {
-            const config = statusConfig[service.status];
-            const StatusIcon = config.icon;
-            return (
-              <Card key={service.name} className="border-border bg-card">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <StatusIcon className={`h-5 w-5 ${config.className}`} />
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{service.name}</p>
-                      <p className="text-xs text-muted-foreground">{service.description}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-xs font-medium ${config.className}`}>{config.label}</p>
-                    <p className="text-xs text-muted-foreground">{service.latency}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        {/* API Health */}
+        <Card className="border-border bg-card">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <StatusIcon className={`h-5 w-5 ${config.className}`} />
+              <div>
+                <p className="text-sm font-semibold text-foreground">API Principal</p>
+                <p className="text-xs text-muted-foreground">Integração Ko-fi/Discord</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className={`text-xs font-medium ${config.className}`}>{config.label}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
