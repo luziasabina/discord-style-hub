@@ -8,28 +8,110 @@ import {
   AlertTriangle,
   TrendingUp,
   Activity,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-
-const adminStats = [
-  { label: "Usuários Registrados", value: "2,341", icon: Users },
-  { label: "Apoiadores Ativos", value: "156", icon: Heart },
-  { label: "Servidores Monitorados", value: "48", icon: Activity },
-  { label: "Alertas Pendentes", value: "3", icon: AlertTriangle },
-];
-
-const recentAdminActions = [
-  { action: "Role 'Apoiador Bronze' atribuída", target: "user#1234", time: "há 5 min" },
-  { action: "Role 'Apoiador Prata' removida", target: "user#5678", time: "há 15 min" },
-  { action: "Novo servidor registrado", target: "Gaming BR", time: "há 1h" },
-  { action: "Métricas exportadas", target: "admin", time: "há 2h" },
-  { action: "Configuração Ko-fi atualizada", target: "webhook", time: "há 3h" },
-];
+import { useEffect, useState } from "react";
+import { api, AdminResponse, Apoiador } from "@/lib/api";
+import { toast } from "sonner";
 
 const Admin = () => {
+  const [data, setData] = useState<AdminResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Set Role form
+  const [roleUserId, setRoleUserId] = useState("");
+  const [roleGuildId, setRoleGuildId] = useState("");
+  const [roleId, setRoleId] = useState("");
+  const [settingRole, setSettingRole] = useState(false);
+
+  // Supporter roles form
+  const [supporterRoles, setSupporterRoles] = useState<
+    Array<{ level: string; min_amount: number; role_id: string }>
+  >([]);
+  const [savingRoles, setSavingRoles] = useState(false);
+
+  useEffect(() => {
+    api.get<AdminResponse>("/admin")
+      .then((res) => {
+        setData(res);
+        if (res.app_config?.supporter_roles) {
+          setSupporterRoles(res.app_config.supporter_roles);
+        }
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSetRole = async () => {
+    if (!roleUserId || !roleGuildId || !roleId) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    setSettingRole(true);
+    try {
+      await api.post("/admin/set-role", {
+        guild_id: roleGuildId,
+        user_id: roleUserId,
+        role_id: roleId,
+      });
+      toast.success("Role atribuída com sucesso!");
+      setRoleUserId("");
+      setRoleGuildId("");
+      setRoleId("");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao definir role");
+    } finally {
+      setSettingRole(false);
+    }
+  };
+
+  const handleSaveSupporterRoles = async () => {
+    setSavingRoles(true);
+    try {
+      await api.post("/admin/set-supporter-roles", { roles: supporterRoles });
+      toast.success("Configuração salva com sucesso!");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao salvar configuração");
+    } finally {
+      setSavingRoles(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-destructive">{error}</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const metricas = data?.metricas;
+  const apoiadores = data?.apoiadores || [];
+
+  const adminStats = [
+    { label: "Total Doações", value: metricas?.total_donations?.toLocaleString() || "0", icon: Heart },
+    { label: "Apoiadores Ativos", value: metricas?.active_supporters?.toLocaleString() || "0", icon: Users },
+    { label: "Servidores Monitorados", value: metricas?.total_servers?.toLocaleString() || "0", icon: Activity },
+    { label: "Alertas Pendentes", value: metricas?.pending_alerts?.toLocaleString() || "0", icon: AlertTriangle },
+  ];
+
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-7xl">
@@ -80,23 +162,34 @@ const Admin = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">ID do Usuário Discord</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Guild ID</label>
                 <input
+                  value={roleGuildId}
+                  onChange={(e) => setRoleGuildId(e.target.value)}
                   placeholder="Ex: 123456789012345678"
                   className="w-full px-3 py-2 rounded-md bg-surface-2 border border-border text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Role</label>
-                <select className="w-full px-3 py-2 rounded-md bg-surface-2 border border-border text-sm text-foreground outline-none focus:border-primary transition-colors">
-                  <option>Apoiador Bronze</option>
-                  <option>Apoiador Prata</option>
-                  <option>Apoiador Ouro</option>
-                  <option>Apoiador Diamante</option>
-                </select>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">ID do Usuário Discord</label>
+                <input
+                  value={roleUserId}
+                  onChange={(e) => setRoleUserId(e.target.value)}
+                  placeholder="Ex: 123456789012345678"
+                  className="w-full px-3 py-2 rounded-md bg-surface-2 border border-border text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors"
+                />
               </div>
-              <Button className="w-full" size="sm">
-                <Crown className="h-3.5 w-3.5 mr-1.5" />
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Role ID</label>
+                <input
+                  value={roleId}
+                  onChange={(e) => setRoleId(e.target.value)}
+                  placeholder="Ex: 123456789012345678"
+                  className="w-full px-3 py-2 rounded-md bg-surface-2 border border-border text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <Button className="w-full" size="sm" onClick={handleSetRole} disabled={settingRole}>
+                {settingRole ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Crown className="h-3.5 w-3.5 mr-1.5" />}
                 Definir Role
               </Button>
             </CardContent>
@@ -111,55 +204,86 @@ const Admin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {[
-                { level: "Bronze", minAmount: "R$ 5", color: "bg-warning/20 text-warning" },
-                { level: "Prata", minAmount: "R$ 15", color: "bg-muted-foreground/20 text-muted-foreground" },
-                { level: "Ouro", minAmount: "R$ 30", color: "bg-warning/30 text-warning" },
-                { level: "Diamante", minAmount: "R$ 50", color: "bg-primary/20 text-primary" },
-              ].map((tier) => (
-                <div key={tier.level} className="flex items-center gap-3 p-3 rounded-lg bg-surface-2">
-                  <Badge className={`${tier.color} border-0 text-xs`}>{tier.level}</Badge>
-                  <div className="flex-1">
-                    <input
-                      defaultValue={tier.minAmount}
-                      className="bg-transparent text-sm text-foreground outline-none w-full"
-                    />
-                  </div>
+              {supporterRoles.map((tier, idx) => (
+                <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-surface-2">
                   <input
+                    value={tier.level}
+                    onChange={(e) => {
+                      const updated = [...supporterRoles];
+                      updated[idx] = { ...updated[idx], level: e.target.value };
+                      setSupporterRoles(updated);
+                    }}
+                    placeholder="Nível"
+                    className="bg-transparent text-sm text-foreground outline-none w-24 font-medium"
+                  />
+                  <input
+                    type="number"
+                    value={tier.min_amount}
+                    onChange={(e) => {
+                      const updated = [...supporterRoles];
+                      updated[idx] = { ...updated[idx], min_amount: Number(e.target.value) };
+                      setSupporterRoles(updated);
+                    }}
+                    placeholder="Min R$"
+                    className="bg-surface-3 border border-border rounded px-2 py-1 text-xs text-foreground w-20 outline-none focus:border-primary"
+                  />
+                  <input
+                    value={tier.role_id}
+                    onChange={(e) => {
+                      const updated = [...supporterRoles];
+                      updated[idx] = { ...updated[idx], role_id: e.target.value };
+                      setSupporterRoles(updated);
+                    }}
                     placeholder="Role ID"
-                    className="bg-surface-3 border border-border rounded px-2 py-1 text-xs text-foreground w-32 outline-none focus:border-primary"
+                    className="bg-surface-3 border border-border rounded px-2 py-1 text-xs text-foreground flex-1 outline-none focus:border-primary"
                   />
                 </div>
               ))}
-              <Button className="w-full" size="sm">
-                <Shield className="h-3.5 w-3.5 mr-1.5" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => setSupporterRoles([...supporterRoles, { level: "", min_amount: 0, role_id: "" }])}
+              >
+                + Adicionar nível
+              </Button>
+              <Button className="w-full" size="sm" onClick={handleSaveSupporterRoles} disabled={savingRoles}>
+                {savingRoles ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Shield className="h-3.5 w-3.5 mr-1.5" />}
                 Salvar Configuração
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Recent Admin Actions */}
+        {/* Apoiadores Table */}
         <Card className="border-border bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
-              Ações Recentes do Admin
+              Apoiadores ({apoiadores.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1">
-            {recentAdminActions.map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-surface-2 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                  <div>
-                    <p className="text-sm text-foreground">{item.action}</p>
-                    <p className="text-xs text-muted-foreground">{item.target}</p>
-                  </div>
+          <CardContent>
+            {apoiadores.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum apoiador encontrado</p>
+            ) : (
+              <div className="space-y-1">
+                <div className="grid grid-cols-4 px-3 py-2 text-xs font-medium text-muted-foreground">
+                  <span>Discord ID</span>
+                  <span>Nome</span>
+                  <span className="text-right">Valor</span>
+                  <span className="text-right">Expiração</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{item.time}</span>
+                {apoiadores.map((a, i) => (
+                  <div key={i} className="grid grid-cols-4 px-3 py-3 rounded-lg hover:bg-surface-2 transition-colors items-center">
+                    <span className="text-sm font-mono text-foreground">{a.discord_id}</span>
+                    <span className="text-sm text-muted-foreground">{a.nome || "—"}</span>
+                    <span className="text-sm text-foreground text-right">R$ {a.valor_doacao?.toFixed(2)}</span>
+                    <span className="text-sm text-muted-foreground text-right">{new Date(a.data_expiracao).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
       </div>
